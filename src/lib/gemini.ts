@@ -53,7 +53,11 @@ const extractionSchema = {
 };
 
 export async function extractCarteGriseData(images: { data: string; mimeType: string }[]): Promise<ExtractionResult> {
-  const model = "gemini-3-flash-preview";
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("Clé API Gemini manquante. Veuillez configurer GEMINI_API_KEY dans les paramètres.");
+  }
+
+  const model = "gemini-3.1-pro-preview";
   
   const systemInstruction = `
     Vous êtes un Assistant Expert en Extraction de Données pour le garage "2S AUTO".
@@ -61,34 +65,14 @@ export async function extractCarteGriseData(images: { data: string; mimeType: st
     
     RÈGLES :
     1. Extrayez les informations du véhicule et reformatez l'immatriculation.
-    2. Convertissez les lettres arabes en équivalents latins :
-       - "أ" -> "A"
-       - "ب" -> "B"
-       - "د" -> "D"
-       - "هـ" -> "H"
-       - "و" -> "W"
-       - "ز" -> "Z"
-       - "ط" -> "T"
-       - "ج" -> "J"
-       - "س" -> "S"
-       - "ق" -> "Q"
-       - "م" -> "M"
-       - "ر" -> "R"
-       - "ش" -> "CH"
-       - "ف" -> "F"
-       - "ك" -> "K"
-       - "ل" -> "L"
-       - "ن" -> "N"
-       - "ي" -> "Y"
-    3. FORMAT D'IMMATRICULATION : Utilisez des espaces pour séparer les chiffres et la lettre.
-       Exemple : "56818-ب-72" doit être formaté comme "56818 B 72".
-    4. Générez "dossier_id" en supprimant tous les espaces de l'immatriculation formatée (ex: "56818B72").
+    2. Convertissez les lettres arabes en équivalents latins (A, B, D, H, W, Z, T, J, S, Q, M, R, CH, F, K, L, N, Y).
+    3. FORMAT D'IMMATRICULATION : Utilisez des espaces pour séparer les chiffres et la lettre. Exemple : "56818-ب-72" -> "56818 B 72".
+    4. Générez "dossier_id" en supprimant tous les espaces de l'immatriculation formatée.
     5. "garage" doit toujours être "2S AUTO".
     6. "status" doit être "Prêt pour l'archivage".
     7. "attachments_count" doit être le nombre d'images fournies.
-    8. Ne faites PAS d'analyse de dommages ou de description visuelle.
-    9. Si une information est manquante, utilisez une chaîne vide.
-    10. Répondez strictement en format JSON.
+    8. Si l'image est illisible ou n'est pas une carte grise, essayez d'extraire ce que vous pouvez ou retournez des champs vides, mais NE PAS échouer silencieusement.
+    9. Répondez strictement en format JSON valide selon le schéma fourni.
   `;
 
   const prompt = "Extrayez les données de ces images de Carte Grise marocaine selon les règles.";
@@ -116,8 +100,13 @@ export async function extractCarteGriseData(images: { data: string; mimeType: st
   });
 
   if (!response.text) {
-    throw new Error("No response from Gemini");
+    throw new Error("Aucune réponse reçue de l'IA.");
   }
 
-  return JSON.parse(response.text);
+  try {
+    return JSON.parse(response.text);
+  } catch (e) {
+    console.error("Failed to parse Gemini response:", response.text);
+    throw new Error("Erreur lors de la lecture des données extraites.");
+  }
 }

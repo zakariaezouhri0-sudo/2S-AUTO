@@ -136,9 +136,9 @@ export default function App() {
       setResult({ ...data, id: docRef.id } as any);
       fetchHistory();
       setView("result");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Extraction error:", err);
-      setError("Échec de l'extraction. Veuillez vous assurer que les images sont claires.");
+      setError(`Échec de l'extraction: ${err.message || "Veuillez vous assurer que les images sont claires."}`);
     } finally {
       setIsProcessing(false);
     }
@@ -627,8 +627,42 @@ async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
+    reader.onload = async () => {
+      const base64 = reader.result as string;
+      // Resize image to max 1600px to avoid payload issues and improve speed
+      try {
+        const resized = await resizeImage(base64, 1600);
+        resolve(resized);
+      } catch (e) {
+        resolve(base64); // Fallback to original if resize fails
+      }
+    };
     reader.onerror = (error) => reject(error);
+  });
+}
+
+async function resizeImage(base64: string, maxWidth: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = base64;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject("Canvas context not available");
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.8));
+    };
+    img.onerror = reject;
   });
 }
 
