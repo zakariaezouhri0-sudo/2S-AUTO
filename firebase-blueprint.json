@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "Dossier": {
+      "title": "Dossier d'Archive",
+      "description": "Informations extraites d'une carte grise et archivées.",
+      "type": "object",
+      "properties": {
+        "garage": { "type": "string" },
+        "dossier_id": { "type": "string" },
+        "vehicule": {
+          "type": "object",
+          "properties": {
+            "immatriculation_originale": { "type": "string" },
+            "immatriculation_formatee": { "type": "string" },
+            "marque": { "type": "string" },
+            "modele": { "type": "string" },
+            "carburant": { "type": "string" },
+            "vin": { "type": "string" },
+            "date_mise_circulation": { "type": "string" }
+          }
+        },
+        "client": {
+          "type": "object",
+          "properties": {
+            "nom_complet": { "type": "string" }
+          }
+        },
+        "status": { "type": "string" },
+        "attachments_count": { "type": "number" },
+        "owner_uid": { "type": "string" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["dossier_id", "vehicule", "client", "owner_uid", "timestamp"]
+    },
+    "Photo": {
+      "title": "Photo de Carte Grise",
+      "description": "Image stockée sous forme de base64.",
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "owner_uid": { "type": "string" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["url", "owner_uid", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/dossiers/{dossierId}": {
+      "schema": "Dossier",
+      "description": "Collection des dossiers d'archives du garage."
+    },
+    "/dossiers/{dossierId}/photos/{photoId}": {
+      "schema": "Photo",
+      "description": "Sous-collection des photos pour un dossier spécifique."
+    }
+  }
+}

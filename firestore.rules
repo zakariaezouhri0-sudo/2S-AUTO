@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: dossiers
+    // Document ID: auto-generated or dossier_id
+    // Fields:
+    //   - garage: string
+    //   - dossier_id: string (required)
+    //   - vehicule: map (required)
+    //   - client: map (required)
+    //   - status: string
+    //   - attachments_count: number
+    //   - image_urls: list of strings (base64 or urls)
+    //   - owner_uid: string (required)
+    //   - timestamp: number (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidDossier(data) {
+      return data.dossier_id is string &&
+             data.vehicule is map &&
+             data.client is map &&
+             data.owner_uid == request.auth.uid &&
+             data.timestamp is number;
+    }
+
+    match /dossiers/{dossierId} {
+      allow read, delete: if isAuthenticated() && resource.data.owner_uid == request.auth.uid;
+      allow create: if isAuthenticated() && isValidDossier(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.owner_uid == request.auth.uid && isValidDossier(request.resource.data);
+
+      match /photos/{photoId} {
+        allow read, write, delete: if isAuthenticated() && get(/databases/$(database)/documents/dossiers/$(dossierId)).data.owner_uid == request.auth.uid;
+      }
+    }
+  }
+}
