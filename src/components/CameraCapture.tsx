@@ -87,6 +87,14 @@ export function CameraCapture({ onCapture, onClose, multiple = false }: CameraCa
         <div className="px-3 py-1 bg-white/10 rounded-full border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest">
           Photos: {count}
         </div>
+        {multiple && count > 0 && !capturedImage && (
+          <button
+            onClick={onClose}
+            className="px-4 py-1 bg-white text-black rounded-full font-bold uppercase tracking-widest text-[10px] shadow-xl hover:bg-zinc-200 transition-all active:scale-95 animate-in fade-in zoom-in duration-300"
+          >
+            Terminer ({count})
+          </button>
+        )}
       </div>
 
       <button 
@@ -153,15 +161,6 @@ export function CameraCapture({ onCapture, onClose, multiple = false }: CameraCa
 
       <canvas ref={canvasRef} className="hidden" />
       
-      {multiple && count > 0 && !capturedImage && (
-        <button
-          onClick={onClose}
-          className="mt-8 px-8 py-3 bg-white text-black rounded-xl font-bold uppercase tracking-widest text-xs shadow-xl hover:bg-zinc-200 transition-all active:scale-95"
-        >
-          Terminer la capture ({count})
-        </button>
-      )}
-
       {!capturedImage && !multiple && (
         <div className="mt-8 text-white/40 text-[10px] uppercase tracking-[0.3em] font-bold">
           Capture de Document 2S AUTO
