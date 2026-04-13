@@ -24,6 +24,12 @@ export function CameraCapture({ onCapture, onClose, multiple = false }: CameraCa
     };
   }, []);
 
+  useEffect(() => {
+    if (!capturedImage && stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [capturedImage, stream]);
+
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
