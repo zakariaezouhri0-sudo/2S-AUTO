@@ -84,25 +84,24 @@ export function CameraCapture({ onCapture, onClose, multiple = false }: CameraCa
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-4">
       <div className="absolute top-6 left-6 flex items-center gap-3">
-        <div className="px-3 py-1 bg-white/10 rounded-full border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest">
-          Photos: {count}
-        </div>
-        {multiple && count > 0 && !capturedImage && (
+        {multiple && (
           <button
             onClick={onClose}
-            className="px-4 py-1 bg-white text-black rounded-full font-bold uppercase tracking-widest text-[10px] shadow-xl hover:bg-zinc-200 transition-all active:scale-95 animate-in fade-in zoom-in duration-300"
+            className="px-4 py-1.5 bg-white text-black rounded-full font-bold uppercase tracking-widest text-[10px] shadow-xl hover:bg-zinc-200 transition-all active:scale-95 animate-in fade-in zoom-in duration-300"
           >
-            Terminer ({count})
+            {count > 0 ? `Terminer (${count})` : "Annuler"}
           </button>
         )}
       </div>
 
-      <button 
-        onClick={onClose}
-        className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-      >
-        <X className="w-6 h-6" />
-      </button>
+      {!multiple && (
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      )}
 
       <div className="relative w-full max-w-lg aspect-[3/4] bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10">
         {!capturedImage ? (
