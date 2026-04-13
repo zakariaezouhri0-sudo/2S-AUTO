@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Wrench, Loader2, AlertCircle, RefreshCcw, History, Plus, LogOut, User as UserIcon } from "lucide-react";
+import { Wrench, Loader2, AlertCircle, RefreshCcw, History, Plus, LogOut, User as UserIcon, Camera } from "lucide-react";
 import { Dropzone } from "./components/Dropzone";
 import { ResultCard } from "./components/ResultCard";
 import { HistoryPage } from "./components/HistoryPage";
 import { LoginPage } from "./components/LoginPage";
+import { CameraCapture } from "./components/CameraCapture";
 import { extractCarteGriseData, ExtractionResult } from "./lib/gemini";
+import { uploadToGoogleDrive } from "./lib/googleDrive";
 import { 
   auth, 
   db, 
@@ -35,6 +37,8 @@ export default function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [view, setView] = useState<View>("extract");
   const [entryMode, setEntryMode] = useState<EntryMode>("ai");
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraTarget, setCameraTarget] = useState<"extract" | "result">("extract");
   const [files, setFiles] = useState<File[]>([]);
   const [manualData, setManualData] = useState({
     immatriculation: "",
@@ -85,6 +89,64 @@ export default function App() {
       setHistory(items);
     } catch (err) {
       console.error("Error fetching history:", err);
+    }
+  };
+
+  const handleCameraCapture = async (base64: string) => {
+    if (cameraTarget === "extract") {
+      // Convert base64 to File object
+      const res = await fetch(base64);
+      const blob = await res.blob();
+      const file = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+      setFiles(prev => [...prev, file].slice(0, 2));
+    } else if (cameraTarget === "result") {
+      await handleAddPhotos([base64]);
+    }
+  };
+
+  const handleSaveToDrive = async (dossierId: string) => {
+    const token = localStorage.getItem("google_drive_token");
+    if (!token) {
+      alert("Veuillez vous reconnecter avec Google pour autoriser l'accès à Google Drive.");
+      return;
+    }
+
+    const dossier = history.find(h => h.id === dossierId) || (result as any);
+    if (!dossier) return;
+
+    setIsProcessing(true);
+    try {
+      // 1. Save metadata as a text file
+      const metadata = `
+DOSSIER ID: ${dossier.dossier_id}
+PROPRIÉTAIRE: ${dossier.client.nom_complet}
+VÉHICULE: ${dossier.vehicule.marque} ${dossier.vehicule.modele}
+IMMATRICULATION: ${dossier.vehicule.immatriculation_formatee}
+VIN: ${dossier.vehicule.vin}
+CARBURANT: ${dossier.vehicule.carburant}
+DATE MISE CIRC.: ${dossier.vehicule.date_mise_circulation}
+      `.trim();
+      
+      const metadataBlob = new Blob([metadata], { type: "text/plain" });
+      const metadataBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(metadataBlob);
+      });
+
+      await uploadToGoogleDrive(token, `dossier-${dossier.dossier_id}.txt`, metadataBase64, `2S-AUTO-${dossier.dossier_id}`);
+
+      // 2. Save all photos
+      for (let i = 0; i < photos.length; i++) {
+        await uploadToGoogleDrive(token, `photo-${i + 1}.jpg`, photos[i].url, `2S-AUTO-${dossier.dossier_id}`);
+      }
+
+      alert("Dossier sauvegardé avec succès sur Google Drive !");
+    } catch (err: any) {
+      console.error("Drive error:", err);
+      alert(`Erreur Google Drive: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -442,7 +504,18 @@ export default function App() {
                 <>
                   <Dropzone files={files} setFiles={setFiles} />
 
-                  <div className="flex justify-end pt-4">
+                  <div className="flex items-center justify-between pt-4">
+                    <button
+                      onClick={() => {
+                        setCameraTarget("extract");
+                        setShowCamera(true);
+                      }}
+                      className="px-6 py-3 border border-garage-border rounded-lg font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-garage-bg transition-all"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Prendre Photo
+                    </button>
+                    
                     <button
                       onClick={handleProcess}
                       disabled={files.length === 0 || isProcessing}
@@ -587,6 +660,11 @@ export default function App() {
                 photos={photos} 
                 onAddPhotos={handleAddPhotos}
                 onDeletePhoto={handleDeletePhoto}
+                onTakePhoto={() => {
+                  setCameraTarget("result");
+                  setShowCamera(true);
+                }}
+                onSaveToDrive={() => handleSaveToDrive((result as any).id)}
               />
             </motion.div>
           )}
@@ -599,6 +677,13 @@ export default function App() {
             />
           )}
         </AnimatePresence>
+
+        {showCamera && (
+          <CameraCapture 
+            onCapture={handleCameraCapture}
+            onClose={() => setShowCamera(false)}
+          />
+        )}
       </main>
 
       <footer className="py-8 px-4 border-t border-garage-border mt-auto">

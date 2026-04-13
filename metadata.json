@@ -1,5 +1,5 @@
 {
   "name": "2S AUTO - Carte Grise Assistant",
   "description": "Expert data extraction and archiving assistant for Moroccan vehicle registration cards.",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["camera"]
 }

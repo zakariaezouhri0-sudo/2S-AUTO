@@ -1,5 +1,5 @@
 import { ExtractionResult } from "@/src/lib/gemini";
-import { CheckCircle2, Car, FileImage, Check, Plus, Loader2, Trash2, Download, CheckSquare, Square } from "lucide-react";
+import { CheckCircle2, Car, FileImage, Check, Plus, Loader2, Trash2, Download, CheckSquare, Square, Camera, Cloud } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
@@ -9,9 +9,11 @@ interface ResultCardProps {
   photos: { id: string; url: string }[];
   onAddPhotos?: (newImages: string[]) => Promise<void>;
   onDeletePhoto?: (photoId: string) => Promise<void>;
+  onTakePhoto?: () => void;
+  onSaveToDrive?: () => void;
 }
 
-export function ResultCard({ data, photos, onAddPhotos, onDeletePhoto }: ResultCardProps) {
+export function ResultCard({ data, photos, onAddPhotos, onDeletePhoto, onTakePhoto, onSaveToDrive }: ResultCardProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -284,6 +286,24 @@ export function ResultCard({ data, photos, onAddPhotos, onDeletePhoto }: ResultC
                 <span className="text-xs opacity-60">Vérifié</span>
                 <Check className="w-4 h-4 text-green-400" />
               </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-white/10 space-y-3">
+              <button
+                onClick={onSaveToDrive}
+                className="w-full bg-white text-garage-accent py-3 rounded-lg font-bold uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-white/90 transition-all shadow-lg"
+              >
+                <Cloud className="w-4 h-4" />
+                Sauvegarder sur Drive
+              </button>
+              
+              <button
+                onClick={onTakePhoto}
+                className="w-full bg-black/20 text-white border border-white/20 py-3 rounded-lg font-bold uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-black/30 transition-all"
+              >
+                <Camera className="w-4 h-4" />
+                Prendre une Photo
+              </button>
             </div>
           </div>
         </div>

@@ -29,7 +29,13 @@ export function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      // @ts-ignore - get access token for Google Drive
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential?.accessToken;
+      if (token) {
+        localStorage.setItem("google_drive_token", token);
+      }
     } catch (err: any) {
       setError(err.message || "Erreur Google Sign-In");
     }
