@@ -682,6 +682,7 @@ DATE MISE CIRC.: ${dossier.vehicule.date_mise_circulation}
           <CameraCapture 
             onCapture={handleCameraCapture}
             onClose={() => setShowCamera(false)}
+            multiple={true}
           />
         )}
       </main>

@@ -4,13 +4,15 @@ import { Camera, X, RefreshCw, Check } from "lucide-react";
 interface CameraCaptureProps {
   onCapture: (base64: string) => void;
   onClose: () => void;
+  multiple?: boolean;
 }
 
-export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
+export function CameraCapture({ onCapture, onClose, multiple = false }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [count, setCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,7 +27,11 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: { 
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
         audio: false
       });
       setStream(mediaStream);
@@ -56,7 +62,12 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const handleConfirm = () => {
     if (capturedImage) {
       onCapture(capturedImage);
-      onClose();
+      setCount(prev => prev + 1);
+      if (multiple) {
+        setCapturedImage(null);
+      } else {
+        onClose();
+      }
     }
   };
 
@@ -66,6 +77,12 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-4">
+      <div className="absolute top-6 left-6 flex items-center gap-3">
+        <div className="px-3 py-1 bg-white/10 rounded-full border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest">
+          Photos: {count}
+        </div>
+      </div>
+
       <button 
         onClick={onClose}
         className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
@@ -105,7 +122,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
               <button
                 onClick={handleConfirm}
                 className="w-14 h-14 rounded-full bg-garage-accent hover:bg-black flex items-center justify-center text-white transition-all shadow-lg"
-                title="Confirmer"
+                title="Valider cette photo"
               >
                 <Check className="w-6 h-6" />
               </button>
@@ -130,9 +147,20 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
 
       <canvas ref={canvasRef} className="hidden" />
       
-      <div className="mt-8 text-white/40 text-[10px] uppercase tracking-[0.3em] font-bold">
-        Capture de Document 2S AUTO
-      </div>
+      {multiple && count > 0 && !capturedImage && (
+        <button
+          onClick={onClose}
+          className="mt-8 px-8 py-3 bg-white text-black rounded-xl font-bold uppercase tracking-widest text-xs shadow-xl hover:bg-zinc-200 transition-all active:scale-95"
+        >
+          Terminer la capture ({count})
+        </button>
+      )}
+
+      {!capturedImage && !multiple && (
+        <div className="mt-8 text-white/40 text-[10px] uppercase tracking-[0.3em] font-bold">
+          Capture de Document 2S AUTO
+        </div>
+      )}
     </div>
   );
 }
